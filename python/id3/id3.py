@@ -78,7 +78,7 @@ def majorityCnt(classList):
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
-		print("usage: python shannon.py <filename>")
+		print("usage: python id3.py <filename>")
 		quit()
 	dataset, labels = createDataset(sys.argv[1])
 	tree = createTree(dataset, labels)
