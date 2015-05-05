@@ -1,0 +1,10 @@
+{
+	"dataSet":[ 
+                ["yes", "yes", "yes"],
+                ["yes", "yes", "yes"],
+                ["yes", "no", "no"],
+                ["no", "yes", "no"],
+                ["no", "yes", "no"]
+	],
+	"labels":["no surfacing", "flippers"]
+}

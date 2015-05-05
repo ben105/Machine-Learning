@@ -1,46 +1,85 @@
 from math import log
+import json
+import sys
 
-def calcShannonEnt(dataset):
-
-	# Figure out how many entries there are in the 
-	# dataset passed in.
-	numEntries = len(dataset)
-
-	# Keep track of how many of each distinct label
-	# occurs in the dataset. We will keep track of 
-	# this in the following dictionary.
+def calcShannonEnt(dataSet):
+	numEntries = len(dataSet) 
 	labelCounts = {}
+	for featVec in dataSet:
+		currentLabel = featVec[-1]
+		if currentLabel not in labelCounts.keys():
+			labelCounts[currentLabel] = 0
+		labelCounts[currentLabel] += 1
+	shannonEnt = 0.0
+	for key, value in labelCounts.iteritems():
+		prob = float(value)/numEntries
+		shannonEnt -= prob*log(prob,2)
+	return shannonEnt
 
-	
-	for featureVector in dataset:
-		# We want to get the last label in the 
-		# in the feature vector, because we are
-		# assuming that this label is the class
-		# identifier.
-		classLabel = featureVector[-1]
-		# Check if the classLabel is already in 
-		# the dictionary of label counts. If it 
-		# isn't then we should create a new entry.
-		if classLabel not in labelCounts.keys():
-			labelCounts[classLabel] = 0
-		labelCounts[classLabel] += 1
+def createDataset(filename):
+	f = open(filename, "r")
+	jsonData = json.load(f)
+	return jsonData["dataSet"], jsonData["labels"]
 
-	# Let's calculate the Shannon entropy.
-	shannonEntropy = 0.0
-	for key in labelCounts.keys():
-		probability = float(labelCounts[key]) / numEntries
-		shannonEntropy -= probability * log(probability, 2)
-	
-	# Return the final result
-	return shannonEntropy
+def splitDataSet(dataSet, axis, value):
+	retDataSet = []
+	for featVec in dataSet:
+		if featVec[axis] == value:
+			reducedFeatVec = featVec[:axis]
+			reducedFeatVec.extend(featVec[axis+1:])
+			retDataSet.append(reducedFeatVec)
+	return retDataSet
 
+def chooseBestFeatureToSplit(dataSet):
+	numFeatures = len(dataSet[0]) - 1
+	baseEntropy = calcShannonEnt(dataSet)
+	bestInfoGain = 0.0
+	bestFeature = -1
+	for i in xrange(numFeatures):
+		featList = [example[i] for example in dataSet]
+		uniqueVals = set(featList)
+		newEntropy = 0.0
+		for value in uniqueVals:
+			subDataSet = splitDataSet(dataSet, i, value)
+			prob = len(subDataSet)/float(len(dataSet))
+			newEntropy += prob * calcShannonEnt(subDataSet)
+		infoGain = baseEntropy - newEntropy
+		if (infoGain > bestInfoGain):
+			bestInfoGain = infoGain
+			bestFeature = i
+	return bestFeature
+
+def createTree(dataSet, labels):
+	classList = [example[-1] for example in dataSet]
+	if classList.count(classList[0]) == len(classList):
+		return classList[0]
+	if len(dataSet[0]) == 1:
+		return majorityCnt(classList)
+	bestFeat = chooseBestFeatureToSplit(dataSet)
+	bestFeatureLabel = labels[bestFeat]
+	myTree = {bestFeatureLabel: {}}
+	del(labels[bestFeat])
+	featValues = [example[bestFeat] for example in dataSet]
+	uniqueVals = set(featValues)
+	for value in uniqueVals:
+		subLabels = labels[:]
+		myTree[bestFeatureLabel][value] = createTree(splitDataSet\
+				(dataSet, bestFeat, value), subLabels)
+	return myTree
+		
+def majorityCnt(classList):
+	classCount = {}
+	for vote in classList:
+		if vote not in classCount.keys(): 
+			classCount[vote] = 0
+		classCount[vote] += 1
+	sortedClassCount = sorted(classCount.iteritems(),key=operator.itemgetter(1),reverse=True)
+	return sortedClassCount[0][0]
 
 if __name__ == "__main__":
-	dataset = [[1, 1, 'maybe'],
-			[1, 1, 'yes'],
-			[1, 0, 'no'],
-			[0, 1, 'no'],
-			[0, 1, 'no'],]
-
-	entropy = calcShannonEnt(dataset)
-	print("Entropy of dataset: {}".format(entropy))
+	if len(sys.argv) < 2:
+		print("usage: python shannon.py <filename>")
+		quit()
+	dataset, labels = createDataset(sys.argv[1])
+	tree = createTree(dataset, labels)
+	print(json.dumps(tree))
