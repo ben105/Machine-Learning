@@ -83,16 +83,19 @@ Matrix<T>::Matrix(vector< vector<T> > arrays) {
 
 
 template <class T>
-bool Matrix<T>::_sameDimensions(Matrix<T>& other) const {
+bool Matrix<T>::_sameDimensions(Matrix<T>& other, bool additive) const {
 	pair<int, int> thisDimensions = this->_getDimensions();
 	pair<int, int> otherDimensions = other._getDimensions();
-	return (thisDimensions.first == otherDimensions.first && 
-		thisDimensions.second == otherDimensions.second);
+	if (additive) {
+		return (thisDimensions.first == otherDimensions.first && 
+			thisDimensions.second == otherDimensions.second);
+	} 
+	return thisDimension.second == otherDimension.second;
 }
 
 template <class T>
 Matrix<T> Matrix<T>::operator+ (Matrix<T>& rhs) const{
-	if (!this->_sameDimensions(rhs)) {
+	if (!this->_sameDimensions(rhs, true)) {
 		throw;
 	}
 	Matrix<T> newMatrix = Matrix<T>(this->_getDimensions());
@@ -106,7 +109,7 @@ Matrix<T> Matrix<T>::operator+ (Matrix<T>& rhs) const{
 
 template <class T>
 Matrix<T> Matrix<T>::operator* (Matrix<T>& rhs) const{
-	if (!this->_sameDimensions(rhs)) {
+	if (!this->_sameDimensions(rhs, false)) {
 		throw;
 	}
 	Matrix<T> newMatrix = Matrix<T>(this->_getDimensions());
@@ -120,7 +123,7 @@ Matrix<T> Matrix<T>::operator* (Matrix<T>& rhs) const{
 
 template <class T>
 Matrix<T> Matrix<T>::operator- (Matrix<T>& rhs) const{
-	if (!this->_sameDimensions(rhs)) {
+	if (!this->_sameDimensions(rhs, true)) {
 		throw;
 	}
 	Matrix<T> newMatrix = Matrix<T>(this->_getDimensions());
